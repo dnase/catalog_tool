@@ -74,7 +74,7 @@ nodes.each do |node|
   # get catalog and store to .pson file
   formatted_facts = prepare_facts(facts).merge(:ignore_cache => true, :environment => Puppet::Node::Environment.remote(environment), :fail_on_404 => true, :transaction_uuid => SecureRandom.uuid)
   result = Puppet::Resource::Catalog.indirection.find(node, formatted_facts)
-  fhandle = File.new("#{node}-#{master}.pson", 'w')
+  fhandle = File.new("#{yamldir}/#{node}-#{master}.pson", 'w')
   fhandle.write(result.to_pson)
   fhandle.close
   puts "Retrieved catalog for #{node}, stored in #{node}-#{master}.pson"
