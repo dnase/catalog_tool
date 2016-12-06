@@ -2,13 +2,15 @@
 require 'puppet'
 require 'puppet/face'
 require 'optparse'
+require 'fileutils'
 
 # script to retrieve and store facts and catalogs from multiple puppet masters for multiple nodes
 # IMPORTANT: in order for this to work in Puppet 3.8, edit puppet.conf on the master/CM and add
 # "trusted_node_data = false" under the [main] section
 
-# directory to store facts - should exist beforehand
-yamldir = '/tmp/yaml/facts'
+cachedir = '/tmp/cache'
+# create cachedir if it doesn't exist
+Dir.mkdir(cachedir) unless File.exists?(cachedir)
 
 if ARGV.count == 0
   puts "Usage: #{$0} [arguments]\n--help for details"
@@ -55,28 +57,32 @@ environment = options[:env]
 nodes = options[:nodes].split(",").map{|node| node.strip}
 
 nodes.each do |node|
-  if File.exist?("#{yamldir}/#{node}.yaml")
+  nodedir = "#{cachedir}/#{node}"
+  Dir.mkdir(nodedir) unless File.exists?(nodedir)
+  facts_file = "#{nodedir}/facts.yaml"
+  catalog_file = "#{nodedir}/#{node}-#{master}.pson"
+  if File.exist?(facts_file)
     # load facts from yaml
-    facts = YAML.load_file("#{yamldir}/#{node}.yaml")
+    facts = YAML.load_file(facts_file)
     if facts.class != Puppet::Node::Facts
       puts "Error: invalid fact yaml"
       exit
     end
-    puts "Loaded facts from #{yamldir}/#{node}.yaml"
+    puts "Loaded facts from #{facts_file}"
   else
-    # get facts from master and save YAML to yamldir
+    # get facts from master and save YAML to cachedir
     facts = Puppet::Face[:facts, '0.0.1'].find(node)
-    fhandle = File.new("#{yamldir}/#{node}.yaml", 'w')
+    fhandle = File.new(facts_file, 'w')
     fhandle.write(facts.render(:yaml))
     fhandle.close
-    puts "Loaded facts from master, stored in #{yamldir}/#{node}.yaml"
+    puts "Loaded facts from master, stored in #{facts_file}"
   end
   # get catalog and store to .pson file
   formatted_facts = prepare_facts(facts).merge(:ignore_cache => true, :environment => Puppet::Node::Environment.remote(environment), :fail_on_404 => true, :transaction_uuid => SecureRandom.uuid)
   result = Puppet::Resource::Catalog.indirection.find(node, formatted_facts)
-  fhandle = File.new("#{yamldir}/#{node}-#{master}.pson", 'w')
+  fhandle = File.new(catalog_file, 'w')
   fhandle.write(result.to_pson)
   fhandle.close
-  puts "Retrieved catalog for #{node}, stored in #{node}-#{master}.pson"
+  puts "Retrieved catalog for #{node}, stored in #{catalog_file}"
 end
 
