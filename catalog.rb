@@ -10,13 +10,14 @@ require 'fileutils'
 
 cachedir = '/tmp/cache'
 # create cachedir if it doesn't exist
-Dir.mkdir(cachedir) unless File.exists?(cachedir)
+Dir.mkdir(cachedir) unless File.exist?(cachedir)
 
 if ARGV.count == 0
   puts "Usage: #{$0} [arguments]\n--help for details"
   exit
 end
 
+overwrite = false
 options = {}
 OptionParser.new do |opts|
   opts.on("-mMASTER", "--master=MASTER", "Puppet master") do |m|
@@ -27,6 +28,9 @@ OptionParser.new do |opts|
   end
   opts.on("-eENVIRONMENT", "--env=ENVIRONMENT", "Puppet environment") do |e|
     options[:env] = e
+  end
+  opts.on("-f", "--force-overwrite", "Overwrite existing catalogs") do
+    overwrite = true
   end
   opts.on("-h", "--help", "Prints this help") do
     puts opts
@@ -58,9 +62,13 @@ nodes = options[:nodes].split(",").map{|node| node.strip}
 
 nodes.each do |node|
   nodedir = "#{cachedir}/#{node}"
-  Dir.mkdir(nodedir) unless File.exists?(nodedir)
+  Dir.mkdir(nodedir) unless File.exist?(nodedir)
   facts_file = "#{nodedir}/facts.yaml"
   catalog_file = "#{nodedir}/#{node}-#{master}.pson"
+  if File.exist?(catalog_file) and overwrite == false
+    puts "Catalog exists and force-overwrite is not set. Run with -f or --force-overwrite to replace catalog."
+    exit
+  end
   if File.exist?(facts_file)
     # load facts from yaml
     facts = YAML.load_file(facts_file)
