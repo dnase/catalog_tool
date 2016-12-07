@@ -64,7 +64,7 @@ nodes.each do |node|
   nodedir = "#{cachedir}/#{node}"
   Dir.mkdir(nodedir) unless File.exist?(nodedir)
   facts_file = "#{nodedir}/facts.yaml"
-  catalog_file = "#{nodedir}/#{node}-#{master}.pson"
+  catalog_file = "#{nodedir}/#{master}.pson"
   if File.exist?(catalog_file) and overwrite == false
     puts "Catalog exists and force-overwrite is not set. Run with -f or --force-overwrite to replace catalog."
     exit
@@ -93,4 +93,3 @@ nodes.each do |node|
   fhandle.close
   puts "Retrieved catalog for #{node}, stored in #{catalog_file}"
 end
-
