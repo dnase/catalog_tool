@@ -29,7 +29,7 @@ OptionParser.new do |opts|
   opts.on("-eENVIRONMENT", "--env=ENVIRONMENT", "Puppet environment") do |e|
     options[:env] = e
   end
-  opts.on("-f", "--force-overwrite", "Overwrite existing catalogs") do
+  opts.on("-f", "--force", "Overwrite existing catalogs") do
     overwrite = true
   end
   opts.on("-h", "--help", "Prints this help") do
@@ -66,7 +66,7 @@ nodes.each do |node|
   facts_file = "#{nodedir}/facts.yaml"
   catalog_file = "#{nodedir}/#{master}.pson"
   if File.exist?(catalog_file) and overwrite == false
-    puts "Catalog exists and force-overwrite is not set. Run with -f or --force-overwrite to replace catalog."
+    puts "Catalog exists and force-overwrite is not set. Run with -f or --force to replace catalog."
     exit
   end
   if File.exist?(facts_file)
@@ -86,7 +86,12 @@ nodes.each do |node|
     puts "Loaded facts from master, stored in #{facts_file}"
   end
   # get catalog and store to .pson file
-  formatted_facts = prepare_facts(facts).merge(:ignore_cache => true, :environment => Puppet::Node::Environment.remote(environment), :fail_on_404 => true, :transaction_uuid => SecureRandom.uuid)
+  formatted_facts = prepare_facts(facts).merge(
+    :ignore_cache => true,
+    :environment => Puppet::Node::Environment.remote(environment),
+    :fail_on_404 => true,
+    :transaction_uuid => SecureRandom.uuid
+  )
   result = Puppet::Resource::Catalog.indirection.find(node, formatted_facts)
   fhandle = File.new(catalog_file, 'w')
   fhandle.write(result.to_pson)
