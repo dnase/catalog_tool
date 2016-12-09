@@ -44,11 +44,18 @@ if options[:master].nil? or options[:nodes].nil? or options[:env].nil?
   exit
 end
 
-def prepare_facts(facts)
+def prepare_facts(facts, environment)
   # make sure the "trusted" fact does not appear or puppet will complain
   facts.values().delete("trusted")
   text = facts.render(:pson)
-  {:facts_format => :pson, :facts => CGI.escape(text)}
+  {
+    :facts_format => :pson, 
+    :facts => CGI.escape(text),
+    :ignore_cache => true,
+    :environment => Puppet::Node::Environment.remote(environment),
+    :fail_on_404 => true,
+    :transaction_uuid => SecureRandom.uuid
+  }
 end
 
 Puppet.initialize_settings
@@ -86,12 +93,7 @@ nodes.each do |node|
     puts "Loaded facts from master, stored in #{facts_file}"
   end
   # get catalog and store to .pson file
-  formatted_facts = prepare_facts(facts).merge(
-    :ignore_cache => true,
-    :environment => Puppet::Node::Environment.remote(environment),
-    :fail_on_404 => true,
-    :transaction_uuid => SecureRandom.uuid
-  )
+  formatted_facts = prepare_facts(facts, environment)
   result = Puppet::Resource::Catalog.indirection.find(node, formatted_facts)
   fhandle = File.new(catalog_file, 'w')
   fhandle.write(result.to_pson)
