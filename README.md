@@ -8,7 +8,7 @@ In order for this to work in Puppet 3.8, edit `puppet.conf` on the master/CM and
 The pson and yaml files are stored by default in `/tmp/cache/<node certname>`.
 
 ##Installation
-Run `./config.sh` to automatically detect the location of Puppet's ruby binary and add it to the top of the script. This location differs between Puppet 4+ and older versions.
+Run `./config.sh` to automatically detect the location of Puppet's ruby binary and put it at the top of the script. This location differs between Puppet 4+ and older versions.
 
 ##Usage
 `./catalog.rb --master=<master> --nodes=<node1, node2...> --env=<environment>`
